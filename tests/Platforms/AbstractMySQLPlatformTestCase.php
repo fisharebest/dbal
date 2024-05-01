@@ -4,6 +4,7 @@ namespace Doctrine\DBAL\Tests\Platforms;
 
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\MySQL;
+use Doctrine\DBAL\Platforms\MySQL\CharsetMetadataProvider;
 use Doctrine\DBAL\Platforms\MySQL\CollationMetadataProvider;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Schema\Comparator;
@@ -738,6 +739,7 @@ abstract class AbstractMySQLPlatformTestCase extends AbstractPlatformTestCase
 
         $comparator = new MySQL\Comparator(
             $this->platform,
+            $this->createMock(CharsetMetadataProvider::class),
             $this->createMock(CollationMetadataProvider::class),
         );
 
@@ -983,7 +985,23 @@ abstract class AbstractMySQLPlatformTestCase extends AbstractPlatformTestCase
         yield 'MySQL comparator' => [
             new MySQL\Comparator(
                 new MySQLPlatform(),
+                new class implements MySQL\CharsetMetadataProvider {
+                    public function normalizeCharset(string $charset): string
+                    {
+                        return $charset;
+                    }
+
+                    public function getDefaultCharsetCollation(string $charset): ?string
+                    {
+                        return null;
+                    }
+                },
                 new class implements CollationMetadataProvider {
+                    public function normalizeCollation(string $collation): string
+                    {
+                        return $collation;
+                    }
+
                     public function getCollationCharset(string $collation): ?string
                     {
                         return null;

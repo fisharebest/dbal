@@ -5,6 +5,8 @@ namespace Doctrine\DBAL\Schema;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\MariaDb1027Platform;
 use Doctrine\DBAL\Platforms\MySQL;
+use Doctrine\DBAL\Platforms\MySQL\CharsetMetadataProvider\CachingCharsetMetadataProvider;
+use Doctrine\DBAL\Platforms\MySQL\CharsetMetadataProvider\ConnectionCharsetMetadataProvider;
 use Doctrine\DBAL\Platforms\MySQL\CollationMetadataProvider\CachingCollationMetadataProvider;
 use Doctrine\DBAL\Platforms\MySQL\CollationMetadataProvider\ConnectionCollationMetadataProvider;
 use Doctrine\DBAL\Result;
@@ -414,10 +416,15 @@ class MySQLSchemaManager extends AbstractSchemaManager
 
     public function createComparator(): Comparator
     {
+        $useUtf8mb3 = $this->_platform->informationSchemaUsesUtf8mb3($this->_conn);
+
         return new MySQL\Comparator(
             $this->_platform,
+            new CachingCharsetMetadataProvider(
+                new ConnectionCharsetMetadataProvider($this->_conn, $useUtf8mb3),
+            ),
             new CachingCollationMetadataProvider(
-                new ConnectionCollationMetadataProvider($this->_conn),
+                new ConnectionCollationMetadataProvider($this->_conn, $useUtf8mb3),
             ),
         );
     }

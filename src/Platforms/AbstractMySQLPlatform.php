@@ -1468,4 +1468,14 @@ SQL
 
         return $result;
     }
+
+    /**
+     * INFORMATION_SCHEMA.CHARACTER_SETS will contain either 'utf8' or 'utf8mb3' but not both.
+     */
+    public function informationSchemaUsesUtf8mb3(Connection $connection): bool
+    {
+        $sql = "SELECT character_set_name FROM INFORMATION_SCHEMA.CHARACTER_SETS WHERE character_set_name = 'utf8mb3'";
+
+        return $connection->fetchOne($sql) === 'utf8mb3';
+    }
 }

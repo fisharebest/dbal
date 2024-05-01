@@ -19,14 +19,21 @@ use function array_intersect_key;
  */
 class Comparator extends BaseComparator
 {
+    /** @var CharsetMetadataProvider */
+    private $charsetMetadataProvider;
+
     /** @var CollationMetadataProvider */
     private $collationMetadataProvider;
 
     /** @internal The comparator can be only instantiated by a schema manager. */
-    public function __construct(AbstractMySQLPlatform $platform, CollationMetadataProvider $collationMetadataProvider)
-    {
+    public function __construct(
+        AbstractMySQLPlatform $platform,
+        CharsetMetadataProvider $charsetMetadataProvider,
+        CollationMetadataProvider $collationMetadataProvider
+    ) {
         parent::__construct($platform);
 
+        $this->charsetMetadataProvider   = $charsetMetadataProvider;
         $this->collationMetadataProvider = $collationMetadataProvider;
     }
 
@@ -77,15 +84,23 @@ class Comparator extends BaseComparator
     /**
      * @param array<string,string> $options
      *
-     * @return array<string,string>
+     * @return array<string,string|null>
      */
     private function normalizeOptions(array $options): array
     {
-        if (isset($options['collation']) && ! isset($options['charset'])) {
-            $charset = $this->collationMetadataProvider->getCollationCharset($options['collation']);
+        if (isset($options['charset'])) {
+            $options['charset'] = $this->charsetMetadataProvider->normalizeCharset($options['charset']);
 
-            if ($charset !== null) {
-                $options['charset'] = $charset;
+            if (! isset($options['collation'])) {
+                $options['collation'] = $this->charsetMetadataProvider->getDefaultCharsetCollation($options['charset']);
+            }
+        }
+
+        if (isset($options['collation'])) {
+            $options['collation'] = $this->collationMetadataProvider->normalizeCollation($options['collation']);
+
+            if (! isset($options['charset'])) {
+                $options['charset'] = $this->collationMetadataProvider->getCollationCharset($options['collation']);
             }
         }
 
